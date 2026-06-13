@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from app.core.actions import extract_balance_sheet_pipeline
+from app.core.database import fetch_latest_gold_balance_sheets
 
 router = APIRouter()
 
-@router.get("/api/balance-sheet/{ticker}")
-async def get_balance_sheet_data(ticker: str):
+@router.post("/extract/{ticker}")
+async def extract_balance_sheets(ticker: str):
     try:
-        payload = await extract_balance_sheet_pipeline(ticker)
-        if "Error Message" in payload:
-            raise HTTPException(status_code=404, detail=payload["Error Message"])
-        return payload
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return await extract_balance_sheet_pipeline(ticker)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+@router.get("/latest")
+async def get_latest_balance_sheets(period_type: str = Query("Annual", regex="^(Annual|Quarterly)$")):
+    return await fetch_latest_gold_balance_sheets(period_type)

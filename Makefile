@@ -17,3 +17,15 @@ clean:
 
 init-db:
 	docker exec -i postgres psql -U postgres -d my_stock_db < init.sql
+
+test:
+	docker compose exec api-server pytest -vv
+
+test-unit:
+	docker compose exec api-server pytest tests/unit -vv
+
+test-integration:
+	docker compose exec api-server pytest tests/integration -vv
+
+coverage:
+	docker compose exec api-server pytest --cov=app tests/unit/ -vv

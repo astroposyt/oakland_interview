@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from app.api.endpoints import prices, balance_sheets
 
-app = FastAPI(title="Oakland Stock Pipeline")
+app = FastAPI(
+    title="Oakland Financial Data Lake Platform API",
+    version="1.0.0"
+)
 
-app.include_router(prices.router)
-app.include_router(balance_sheets.router)
+app.include_router(prices.router, prefix="/api/v1/prices", tags=["Market Prices"])
+app.include_router(balance_sheets.router, prefix="/api/v1/balance-sheets", tags=["Fundamental Balance Sheets"])
 
-@app.get("/")
-def read_root():
-    return {"status": "healthy", "message": "Pipeline plumbing is operational!"}
+@app.get("/health", tags=["System Utilities"])
+async def health_check():
+    return {"status": "healthy", "environment": "docker_desktop"}

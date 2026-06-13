@@ -69,3 +69,22 @@ async def upsert_silver_balance_sheets(ticker: str, records: list[BalanceSheetRe
             logger.info(f"Successfully loaded {len(records)} {period_type} balance sheets into Silver for {ticker}")
     finally:
         await conn.close()
+
+async def fetch_latest_gold_prices() -> list[dict]:
+    conn = await get_db_connection()
+    try:
+        rows = await conn.fetch("SELECT * FROM gold_latest_daily_prices")
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
+
+async def fetch_latest_gold_balance_sheets(period_type: str) -> list[dict]:
+    conn = await get_db_connection()
+    try:
+        rows = await conn.fetch(
+            "SELECT * FROM gold_latest_balance_sheets WHERE period_type = $1", 
+            period_type.capitalize()
+        )
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
