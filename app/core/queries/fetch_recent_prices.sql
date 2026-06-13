@@ -10,6 +10,7 @@ WITH ranked_prices AS (
         ROW_NUMBER() OVER (PARTITION BY p.stock_id ORDER BY p.price_date DESC) as rn
     FROM fact_daily_prices p
     JOIN dim_stocks s ON p.stock_id = s.id
+    WHERE s.should_fetch = TRUE 
 )
 SELECT ticker, price_date, open_price, high_price, low_price, close_price, volume
 FROM ranked_prices

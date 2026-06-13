@@ -12,5 +12,7 @@ async def extract_balance_sheets(ticker: str):
         raise HTTPException(status_code=422, detail=str(e))
 
 @router.get("/latest")
-async def get_latest_balance_sheets(period_type: str = Query("Annual", regex="^(Annual|Quarterly)$")):
+async def get_latest_balance_sheets(
+    period_type: str = Query("Annual", pattern="^(Annual|Quarterly)$")
+):
     return await fetch_latest_gold_balance_sheets(period_type)

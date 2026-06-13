@@ -10,7 +10,7 @@ WITH ranked_sheets AS (
         ROW_NUMBER() OVER (PARTITION BY b.stock_id ORDER BY b.fiscal_date_ending DESC) as rn
     FROM fact_balance_sheets b
     JOIN dim_stocks s ON b.stock_id = s.id
-    WHERE b.period_type = $1
+    WHERE b.period_type = $1 AND s.should_fetch = TRUE 
 )
 SELECT ticker, period_type, fiscal_date_ending, reported_currency, total_assets, total_liabilities, total_shareholder_equity
 FROM ranked_sheets
