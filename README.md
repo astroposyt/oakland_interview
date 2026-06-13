@@ -20,7 +20,7 @@ A Makefile has been created to simplify development. The available commands are:
 - `make start` - Starts the application
 - `make stop` - Stops the application
 - `make clean` - Clears the database and stops the application
-- `make init` - Initializes the database tables
+- `make init-db` - Initializes the database tables
 
 ## Starting the Application
 
