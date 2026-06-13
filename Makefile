@@ -14,3 +14,6 @@ stop:
 clean:
 	@echo "🧹 Wiping container state and volumes (Fresh Start)..."
 	docker compose down -v
+
+init-db:
+	docker exec -i postgres psql -U postgres -d my_stock_db < init.sql
