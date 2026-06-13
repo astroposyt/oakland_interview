@@ -1,8 +1,9 @@
 import pytest
-from app.core.actions import ingest_stock_data
+from app.core.actions import extract_stock_pipeline
 
 @pytest.mark.asyncio
-async def test_tracer_bullet_action():
-    result = await ingest_stock_data("AAPL")
-    assert result["status"] == "success"
-    assert result["ticker"] == "AAPL"
+async def test_extract_stock_pipeline():
+    ticker = "AAPL"
+    result = await extract_stock_pipeline(ticker)
+    assert result is not None
+    assert "Meta Data" in result
