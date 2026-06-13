@@ -38,3 +38,13 @@ volumes:
 networks:
   stock_network:
     driver: bridge
+
+dozzle:
+    image: amir20/dozzle:latest
+    container_name: log_viewer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api-server
