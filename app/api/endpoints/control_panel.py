@@ -14,7 +14,6 @@ from app.core.database import (
 )
 from app.core.actions import extract_stock_pipeline, extract_balance_sheet_pipeline
 
-# 🛠️ Explicitly declare the path namespace right here!
 router = APIRouter(prefix="/control-panel")
 logger = logging.getLogger("uvicorn.error")
 
@@ -39,7 +38,6 @@ async def control_panel_subscription_stream(websocket: WebSocket):
                     fetch_recent_prices(per_stock_limit=10)
                 )
                 
-                # 🛠️ Sanitize the data structures into JSON-safe primitives
                 safe_payload = jsonable_encoder({
                     "stocks": stocks,
                     "max_days": max_days,
@@ -51,7 +49,6 @@ async def control_panel_subscription_stream(websocket: WebSocket):
                     f"{len(max_days)} high records | {len(history)} price rows"
                 )
                 
-                # Send the clean, encoded payload
                 await websocket.send_json(safe_payload)
                 
             except Exception as query_err:
@@ -62,7 +59,6 @@ async def control_panel_subscription_stream(websocket: WebSocket):
     except WebSocketDisconnect:
         logger.info("[WS] Client disconnected from live dashboard stream.")
 
-# --- Action Gateway Endpoints ---
 
 class StockCreatePayload(BaseModel):
     ticker: str

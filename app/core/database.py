@@ -82,10 +82,8 @@ async def fetch_latest_gold_prices() -> list[dict]:
 async def fetch_latest_gold_balance_sheets(period_type: str) -> list[dict]:
     conn = await get_db_connection()
     try:
-        rows = await conn.fetch(
-            "SELECT * FROM gold_latest_balance_sheets WHERE period_type = $1", 
-            period_type.capitalize()
-        )
+        query = load_query("fetch_latest_gold_balance_sheets.sql")
+        rows = await conn.fetch(query, period_type.capitalize())
         return [dict(r) for r in rows]
     finally:
         await conn.close()
@@ -93,14 +91,8 @@ async def fetch_latest_gold_balance_sheets(period_type: str) -> list[dict]:
 async def add_tracked_stock(ticker: str, company_name: str) -> None:
     conn = await get_db_connection()
     try:
-        await conn.execute(
-            """
-            INSERT INTO dim_stocks (ticker, company_name, should_fetch)
-            VALUES ($1, $2, TRUE)
-            ON CONFLICT (ticker) DO UPDATE SET should_fetch = TRUE
-            """,
-            ticker.upper(), company_name
-        )
+        query = load_query("add_tracked_stock.sql")
+        await conn.execute(query, ticker.upper(), company_name)
     finally:
         await conn.close()
 
