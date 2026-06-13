@@ -1,43 +1,35 @@
-import asyncio
-import datetime
 import logging
-
-from app.core.database import fetch_tracked_stocks
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from app.core.database import fetch_tracked_stocks, refresh_materialized_views
 from app.core.actions import extract_stock_pipeline, extract_balance_sheet_pipeline
 
 logger = logging.getLogger("uvicorn.error")
 
-async def cron_sync_scheduler():
-    logger.info("[CRON] Simplified wall-clock scheduler active. Watching for 17:00 and 17:05 daily.")
-    
-    last_fired_minute = -1
-    
-    while True:
-        now = datetime.datetime.now()
-        
-        if now.hour == 17 and now.minute in (0, 5):
+async def sync_all_stocks():
+    logger.info("[CRON] Executing 5-minute data sync cascade...")
+    try:
+        stocks = await fetch_tracked_stocks()
+        if not stocks:
+            logger.info("[CRON] Sync skipped: No active monitored stocks found.")
+            return
             
-            if now.minute != last_fired_minute:
-                last_fired_minute = now.minute
-                logger.info(f"[CRON] Target reached ({now.strftime('%H:%M')}). Executing data sync cascade...")
-                
-                try:
-                    stocks = await fetch_tracked_stocks()
-                    if not stocks:
-                        logger.info("[CRON] Sync skipped: No active monitored stocks found.")
-                        continue
-                        
-                    for stock in stocks:
-                        ticker = stock["ticker"]
-                        logger.info(f"[CRON][{ticker}] Processing Medallion pipelines...")
-                        await extract_stock_pipeline(ticker)
-                        await extract_balance_sheet_pipeline(ticker)
-                        
-                    logger.info("[CRON] Batch execution completed successfully.")
-                except Exception as err:
-                    logger.error(f"[CRON] Pipeline failed: {str(err)}")
-        
-        if now.minute not in (0, 5):
-            last_fired_minute = -1
+        for stock in stocks:
+            ticker = stock["ticker"]
+            logger.info(f"[CRON][{ticker}] Processing Medallion pipelines...")
+            await extract_stock_pipeline(ticker)
+            await extract_balance_sheet_pipeline(ticker)
             
-        await asyncio.sleep(30)
+        logger.info("[CRON] Pipeline extractions complete. Refreshing Gold views...")
+        await refresh_materialized_views()
+        
+        logger.info("[CRON] Batch execution completed successfully.")
+    except Exception as err:
+        logger.exception(f"[CRON] Pipeline failed: {str(err)}")
+
+def start_scheduler():
+    scheduler = AsyncIOScheduler()
+    
+    scheduler.add_job(sync_all_stocks, 'interval', minutes=5)
+    
+    scheduler.start()
+    logger.info("[CRON] APScheduler active. Syncing every 5 minutes.")
