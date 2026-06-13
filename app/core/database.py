@@ -2,10 +2,11 @@ import os
 import json
 import logging
 import asyncpg
-from typing import Optional, Any
+from functools import lru_cache
+from typing import Optional
+
 from app.schemas.prices import DailyPriceRecord
 from app.schemas.balance_sheets import BalanceSheetRecord
-from app.core import queries 
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -30,7 +31,7 @@ async def close_db_pool() -> None:
         db_pool = None
         logger.info("Database connection pool closed.")
 
-
+@lru_cache(maxsize=None)
 def load_query(query_name: str) -> str:
     """Helper utility to load raw SQL script code strings from external disk locations."""
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -38,31 +39,31 @@ def load_query(query_name: str) -> str:
     with open(query_path, "r") as f:
         return f.read()
 
-
-
 async def insert_bronze_response(api_called: str, ticker: str, status: str, response_json: dict) -> None:
     """Dumps raw, unprocessed JSON API data strings directly into the Bronze audit logs."""
     async with db_pool.acquire() as conn:
         await conn.execute(
             """
             INSERT INTO bronze_api_responses (api_called, ticker, status, response_json)
-            VALUES ($1, $2, $3, $4)
+            VALUES ($1, $2, $3, $4::jsonb)
             """,
             api_called, ticker.upper(), status, json.dumps(response_json)
         )
 
 async def get_or_create_stock_id(conn: asyncpg.Connection, ticker: str) -> int:
     """Internal transaction utility helper to locate or map primary identity key definitions."""
-    return await conn.fetchval(queries.GET_OR_CREATE_STOCK, ticker.upper(), f"{ticker.upper()} Inc")
+    query = load_query("get_or_create_stock.sql")
+    return await conn.fetchval(query, ticker.upper(), f"{ticker.upper()} Inc")
 
 async def upsert_silver_prices(ticker: str, records: list[DailyPriceRecord]) -> None:
     """Transforms and saves cleaned, structured pricing metrics into Silver fact tables."""
+    query = load_query("upsert_prices.sql")
     async with db_pool.acquire() as conn:
         async with conn.transaction():
             stock_id = await get_or_create_stock_id(conn, ticker)
             for rec in records:
                 await conn.execute(
-                    queries.UPSERT_PRICES,
+                    query,
                     stock_id, rec.price_date, rec.open_price, rec.high_price, 
                     rec.low_price, rec.close_price, rec.volume
                 )
@@ -70,12 +71,13 @@ async def upsert_silver_prices(ticker: str, records: list[DailyPriceRecord]) -> 
 
 async def upsert_silver_balance_sheets(ticker: str, records: list[BalanceSheetRecord], period_type: str) -> None:
     """Transforms and saves clean fundamental records into Silver fundamental ledgers."""
+    query = load_query("upsert_balance_sheets.sql")
     async with db_pool.acquire() as conn:
         async with conn.transaction():
             stock_id = await get_or_create_stock_id(conn, ticker)
             for rec in records:
                 await conn.execute(
-                    queries.UPSERT_BALANCE_SHEETS,
+                    query,
                     stock_id, rec.fiscal_date_ending, period_type, rec.reported_currency, 
                     rec.total_assets, rec.total_current_assets, rec.cash_and_cash_equivalents, 
                     rec.cash_and_short_term_investments, rec.inventory, rec.current_net_receivables,
@@ -86,7 +88,6 @@ async def upsert_silver_balance_sheets(ticker: str, records: list[BalanceSheetRe
                     rec.retained_earnings, rec.common_stock, rec.shares_outstanding
                 )
             logger.info(f"Successfully loaded {len(records)} {period_type} balance sheets into Silver for {ticker}")
-
 
 async def refresh_materialized_views() -> None:
     """Triggers hot execution refreshes to re-compile your background materialized view states."""

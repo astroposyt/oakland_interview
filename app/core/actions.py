@@ -17,10 +17,13 @@ async def _orchestrate_pipeline(
 ) -> dict:
     raw_data = await fetch_handler(ticker)
     
-    status = "ERROR" if "Error Message" in raw_data else "SUCCESS"
+    is_error = any(key in raw_data for key in ["Error Message", "Information", "Note"])
+    status = "ERROR" if is_error else "SUCCESS"
+    
     await insert_bronze_response(api_called, ticker, status, raw_data)
     
     if status == "ERROR":
+        logger.error(f"[{ticker}] API Failed/Rate-Limited: {raw_data}")
         return raw_data
 
     try:

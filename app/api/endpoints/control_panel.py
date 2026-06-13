@@ -67,7 +67,14 @@ class StockCreatePayload(BaseModel):
 @router.post("/api/v1/control/stocks")
 async def api_add_stock(payload: StockCreatePayload):
     await add_tracked_stock(payload.ticker, payload.company_name)
-    return {"status": "success"}
+    
+    await extract_stock_pipeline(payload.ticker)
+    await extract_balance_sheet_pipeline(payload.ticker)
+
+    from app.core.database import refresh_materialized_views
+    await refresh_materialized_views()
+    
+    return {"status": "success", "message": "Stock added and data fetched"}
 
 @router.post("/api/v1/control/stocks/untrack/{ticker}")
 async def api_untrack_stock(ticker: str):
