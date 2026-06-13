@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # SERVICE 1: The database container
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: my_stock_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Mounts your local schema script so Postgres automatically runs it on first boot
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - stock_network
+
+  # SERVICE 2: Your FastAPI and CLI application container
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api_server
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - .:/workspace  # Live reload code changes from your host laptop into the container
+    depends_on:
+      - postgres      # Ensures the database boots up before your app starts trying to talk to it
+    networks:
+      - stock_network
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
+volumes:
+  postgres_data:
+
+networks:
+  stock_network:
+    driver: bridge
