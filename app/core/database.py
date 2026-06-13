@@ -4,6 +4,7 @@ import logging
 import asyncpg
 from app.schemas.prices import DailyPriceRecord
 from app.schemas.balance_sheets import BalanceSheetRecord
+from typing import Optional
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -85,6 +86,65 @@ async def fetch_latest_gold_balance_sheets(period_type: str) -> list[dict]:
             "SELECT * FROM gold_latest_balance_sheets WHERE period_type = $1", 
             period_type.capitalize()
         )
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
+
+async def add_tracked_stock(ticker: str, company_name: str) -> None:
+    conn = await get_db_connection()
+    try:
+        await conn.execute(
+            """
+            INSERT INTO dim_stocks (ticker, company_name, should_fetch)
+            VALUES ($1, $2, TRUE)
+            ON CONFLICT (ticker) DO UPDATE SET should_fetch = TRUE
+            """,
+            ticker.upper(), company_name
+        )
+    finally:
+        await conn.close()
+
+async def fetch_tracked_stocks() -> list[dict]:
+    conn = await get_db_connection()
+    try:
+        query = load_query("list_tracked_stocks.sql")
+        rows = await conn.fetch(query)
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
+
+async def untrack_stock(ticker: str) -> None:
+    conn = await get_db_connection()
+    try:
+        query = load_query("untrack_stock.sql")
+        await conn.execute(query, ticker.upper())
+    finally:
+        await conn.close()
+
+async def fetch_recent_prices(per_stock_limit: int = 10) -> list[dict]:
+    conn = await get_db_connection()
+    try:
+        query = load_query("fetch_recent_prices.sql")
+        rows = await conn.fetch(query, per_stock_limit)
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
+
+async def fetch_recent_balance_sheets(period_type: str, per_stock_limit: int = 10) -> list[dict]:
+    conn = await get_db_connection()
+    try:
+        query = load_query("fetch_recent_balance_sheets.sql")
+        rows = await conn.fetch(query, period_type.capitalize(), per_stock_limit)
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
+
+async def fetch_max_price_days(ticker: Optional[str] = None) -> list[dict]:
+    conn = await get_db_connection()
+    try:
+        query = load_query("get_max_price_days.sql")
+        param = ticker.upper() if ticker else None
+        rows = await conn.fetch(query, param)
         return [dict(r) for r in rows]
     finally:
         await conn.close()
