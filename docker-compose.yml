@@ -1,5 +1,4 @@
 services:
-  # SERVICE 1: The database container
   postgres:
     image: postgres:16-alpine
     container_name: postgres
@@ -15,7 +14,6 @@ services:
     networks:
       - stock_network
 
-  # SERVICE 2: Your FastAPI and CLI application container
   api-server:
     build:
       context: .
@@ -26,20 +24,14 @@ services:
     env_file:
       - .env
     volumes:
-      - .:/workspace  # Live reload code changes from your host laptop into the container
+      - .:/workspace 
     depends_on:
-      - postgres      # Ensures the database boots up before your app starts trying to talk to it
+      - postgres     
     networks:
       - stock_network
     command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
-volumes:
-  postgres_data:
 
-networks:
-  stock_network:
-    driver: bridge
-
-dozzle:
+  dozzle:
     image: amir20/dozzle:latest
     container_name: log_viewer
     volumes:
@@ -48,3 +40,10 @@ dozzle:
       - "8080:8080"
     depends_on:
       - api-server
+
+volumes:
+  postgres_data:
+
+networks:
+  stock_network:
+    driver: bridge
