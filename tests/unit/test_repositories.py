@@ -81,3 +81,38 @@ async def test_gold_repo_fetch_latest_gold_balance_sheets(mock_load_query, mock_
         "SELECT * FROM gold_latest_balance_sheets WHERE period_type = $1;", 
         "Annual"
     )
+
+@pytest.mark.asyncio
+@patch("app.repositories.stock_repo.get_pool")
+@patch("app.repositories.stock_repo.load_query")
+async def test_stock_repo_fetch_stocks_needing_price_sync(mock_load_query, mock_get_pool):
+    mock_load_query.return_value = "SELECT ticker FROM dim_stocks..."
+    
+    mock_conn = AsyncMock()
+    mock_pool = MagicMock()
+    mock_pool.acquire.return_value.__aenter__.return_value = mock_conn
+    mock_get_pool.return_value = mock_pool
+    mock_conn.fetch.return_value = [{"ticker": "AAPL", "company_name": "Apple Inc"}]
+
+    result = await StockRepository.fetch_stocks_needing_price_sync()
+
+    assert len(result) == 1
+    assert result[0]["ticker"] == "AAPL"
+    mock_load_query.assert_called_once_with("fetch_stocks_needing_price_sync.sql")
+
+
+@pytest.mark.asyncio
+@patch("app.repositories.stock_repo.get_pool")
+@patch("app.repositories.stock_repo.load_query")
+async def test_stock_repo_update_price_sync_time(mock_load_query, mock_get_pool):
+    mock_load_query.return_value = "UPDATE dim_stocks SET last_price_sync_at..."
+    
+    mock_conn = AsyncMock()
+    mock_pool = MagicMock()
+    mock_pool.acquire.return_value.__aenter__.return_value = mock_conn
+    mock_get_pool.return_value = mock_pool
+
+    await StockRepository.update_price_sync_time("AAPL")
+
+    mock_load_query.assert_called_once_with("update_price_sync_time.sql")
+    mock_conn.execute.assert_called_once_with("UPDATE dim_stocks SET last_price_sync_at...", "AAPL")
