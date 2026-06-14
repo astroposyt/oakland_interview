@@ -9,7 +9,6 @@ from app.core.logger import get_logger
 
 logger = get_logger(__name__)
 
-
 router = APIRouter(prefix="/api/v1")
 
 class StockCreatePayload(BaseModel):
@@ -74,7 +73,6 @@ async def extract_balance_sheets(ticker: str):
 @router.get("/prices/latest/gold", tags=["Analytical Serving"])
 async def get_latest_gold_prices():
     """Queries the processed Gold Materialized View directly for frontend display."""
-    # Assumes you add this simple fetcher to the GoldRepository
     return await GoldRepository.fetch_latest_gold_prices()
 
 @router.get("/balance-sheets/latest/gold", tags=["Analytical Serving"])
@@ -82,5 +80,4 @@ async def get_latest_gold_balance_sheets(
     period_type: str = Query("Annual", pattern="^(Annual|Quarterly)$")
 ):
     """Queries the clean accounting histories directly from the Gold layer."""
-    # Assumes you add this simple fetcher to the GoldRepository
     return await GoldRepository.fetch_latest_gold_balance_sheets(period_type)

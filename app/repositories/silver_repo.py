@@ -59,3 +59,31 @@ class SilverRepository:
                 await conn.executemany(query, values)
                 
         logger.info(f"Loaded {len(records)} {period_type} balance sheets into Silver for {ticker}")
+
+    @staticmethod
+    async def fetch_diagnostic_silver_prices(limit: int = 20) -> List[dict]:
+        """Dumps the direct rows of the clean, normalized pricing fact table."""
+        pool = get_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT s.ticker, p.price_date, p.open_price, p.high_price, p.low_price, p.close_price, p.volume 
+                   FROM fact_daily_prices p 
+                   JOIN dim_stocks s ON p.stock_id = s.id 
+                   ORDER BY p.price_date DESC LIMIT $1;""",
+                limit
+            )
+            return [dict(r) for r in rows]
+
+    @staticmethod
+    async def fetch_diagnostic_silver_balances(limit: int = 20) -> List[dict]:
+        """Dumps the direct rows of the normalized accounting balance sheet fact table."""
+        pool = get_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT s.ticker, b.fiscal_date_ending, b.period_type, b.reported_currency, b.total_assets, b.total_liabilities, b.total_shareholder_equity 
+                   FROM fact_balance_sheets b 
+                   JOIN dim_stocks s ON b.stock_id = s.id 
+                   ORDER BY b.fiscal_date_ending DESC LIMIT $1;""",
+                limit
+            )
+            return [dict(r) for r in rows]

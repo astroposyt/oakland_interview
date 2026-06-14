@@ -1,4 +1,5 @@
 import json
+from typing import List
 from app.core.db import get_pool, load_query
 from app.core.logger import get_logger
 
@@ -21,3 +22,14 @@ class BronzeRepository:
                 status, 
                 json.dumps(response_json)
             )
+
+    @staticmethod
+    async def fetch_diagnostic_bronze(limit: int = 20) -> List[dict]:
+        """Dumps the most recent immutable raw API payloads from Bronze."""
+        pool = get_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id, api_called, ticker, status, extracted_at, response_json::text FROM bronze_api_responses ORDER BY extracted_at DESC LIMIT $1;",
+                limit
+            )
+            return [dict(r) for r in rows]
