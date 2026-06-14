@@ -4,7 +4,6 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-# Import our layered architecture
 from app.repositories.stock_repo import StockRepository
 from app.repositories.gold_repo import GoldRepository
 from app.services.ingestion_service import StockIngestionService
@@ -23,11 +22,6 @@ def run_async(coro):
         finally:
             await close_db_pool()
     return asyncio.run(_wrapper())
-
-
-def run_async(coro):
-    """Helper to run async functions in synchronous Typer commands."""
-    return asyncio.run(coro)
 
 @app.command("add")
 def add_stock(ticker: str = typer.Option(..., "-t", help="Stock ticker symbol"), 

@@ -23,14 +23,12 @@ class SilverRepository:
             async with conn.transaction():
                 stock_id = await SilverRepository._get_stock_id(conn, ticker)
                 
-                # Prepare data for bulk insert
                 values = [
                     (stock_id, rec.price_date, rec.open_price, rec.high_price, 
                      rec.low_price, rec.close_price, rec.volume)
                     for rec in records
                 ]
                 
-                # Execute in bulk (Massive performance boost over loops)
                 await conn.executemany(query, values)
                 
         logger.info(f"Loaded {len(records)} price records into Silver for {ticker}")

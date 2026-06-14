@@ -1,0 +1,31 @@
+<div id="slide-3" class="slide hidden">
+    <div class="mb-6 flex items-center justify-between border-b border-slate-700 pb-4">
+        <div class="flex items-center space-x-3">
+            <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-rose-900 bg-rose-400 rounded-full">Step 3</span>
+            <h2 class="text-2xl font-bold text-white">Quality Gates: Schema Validation</h2>
+        </div>
+        <code class="text-slate-500 text-sm">app/schemas/prices.py</code>
+    </div>
+    
+    <div class="bg-slate-900 rounded-lg p-5 border-l-4 border-rose-500 mb-6 text-slate-300 text-sm">
+        <strong class="text-white block mb-1">Architectural Context:</strong>
+        Before the unstructured JSON enters our data warehouse, it is strictly typed using a Pydantic schema model. We enforce domain rules (e.g., negative prices are impossible). Bad rows are quarantined.
+    </div>
+
+    <div class="bg-[#1e1e1e] rounded-lg p-6 border border-slate-700 overflow-x-auto shadow-inner">
+<pre class="text-sm font-mono leading-relaxed"><span class="text-purple-400">class</span> <span class="text-yellow-200">DailyPriceRecord</span><span class="text-slate-300">(BaseModel):</span>
+    price_date: date
+    open_price: Decimal
+    high_price: Decimal
+    low_price: Decimal
+    close_price: Decimal
+    volume: int
+
+    <span class="text-slate-500"># Inline Pipeline Shielding</span>
+    <span class="text-purple-400">@model_validator</span><span class="text-slate-300">(mode=</span><span class="text-green-300">"after"</span><span class="text-slate-300">)</span>
+    <span class="text-blue-400">def</span> <span class="text-yellow-200">validate_price_bounds</span><span class="text-slate-300">(self):</span>
+        <span class="text-blue-400">if</span> <span class="text-slate-300">any(p <= </span><span class="text-orange-300">0</span> <span class="text-blue-400">for</span> <span class="text-slate-300">p </span><span class="text-blue-400">in</span> <span class="text-slate-300">[self.open_price, self.high_price, self.close_price]):</span>
+            <span class="text-blue-400">raise</span> <span class="text-yellow-200">ValueError</span><span class="text-slate-300">(</span><span class="text-green-300">"QA Alert: Prices must be positive."</span><span class="text-slate-300">)</span>
+        <span class="text-blue-400">return</span> <span class="text-slate-300">self</span></pre>
+    </div>
+</div>

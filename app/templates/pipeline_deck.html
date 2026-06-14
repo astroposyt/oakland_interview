@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Pricing Pipeline | Oakland{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-end mb-8">
+    <div>
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Pricing Pipeline Lineage</h1>
+        <p class="text-slate-400 mt-1">Live WebSocket feed tracking pricing data through the Medallion layers.</p>
+    </div>
+    
+    <div class="flex items-center space-x-4 bg-slate-800 p-2 rounded-lg border border-slate-700 shadow-lg">
+        <button onclick="moveSlide(-1)" class="px-4 py-2 text-sm font-medium rounded-md text-slate-300 hover:bg-slate-700 transition">◀ Prev</button>
+        <span id="slide-indicator" class="font-mono text-sky-400 font-bold text-sm">Step 1 / 6</span>
+        <button onclick="moveSlide(1)" class="px-4 py-2 text-sm font-medium rounded-md bg-sky-600 text-white hover:bg-sky-500 transition shadow-sm">Next ▶</button>
+    </div>
+</div>
+
+<div class="relative w-full overflow-hidden bg-slate-850 border border-slate-700 rounded-xl shadow-2xl p-8 min-h-[600px]">
+    {% include 'deck_slides/slide_1_target.html' %}
+    {% include 'deck_slides/slide_2_bronze.html' %}
+    {% include 'deck_slides/slide_3_validation.html' %}
+    {% include 'deck_slides/slide_4_silver.html' %}
+    {% include 'deck_slides/slide_5_orchestrator.html' %}
+    {% include 'deck_slides/slide_6_gold.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentSlide = 1;
+    const totalSlides = 6;
+
+    function moveSlide(direction) {
+        document.getElementById(`slide-${currentSlide}`).classList.replace('block', 'hidden');
+        currentSlide += direction;
+        if (currentSlide < 1) currentSlide = 1;
+        if (currentSlide > totalSlides) currentSlide = totalSlides;
+        document.getElementById(`slide-${currentSlide}`).classList.replace('hidden', 'block');
+        document.getElementById('slide-indicator').innerText = `Step ${currentSlide} / ${totalSlides}`;
+    }
+
+    const ws = new WebSocket((window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws/pipeline");
+
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        document.getElementById('ws-pending-syncs').innerHTML = data.pending_syncs.length > 0 
+            ? data.pending_syncs.map(s => `<tr class="hover:bg-slate-800/50"><td class="px-6 py-4 font-bold text-white">${s.ticker}</td><td class="px-6 py-4 text-slate-400">${s.company_name}</td><td class="px-6 py-4"><span class="px-2 py-1 text-xs rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Pending API Sync</span></td></tr>`).join('')
+            : `<tr><td colspan="3" class="px-6 py-8 text-center text-emerald-400 font-bold bg-emerald-900/10">✅ All tracked assets are up to date!</td></tr>`;
+
+        document.getElementById('ws-bronze-data').innerHTML = data.bronze_data.length > 0
+            ? data.bronze_data.map(r => `<tr class="hover:bg-slate-800/50 align-top"><td class="px-6 py-4"><div class="font-bold text-white text-lg">${r.ticker}</div><div class="mt-2"><span class="px-2 py-1 text-xs rounded-md ${r.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">${r.status}</span></div></td><td class="px-6 py-4"><div class="bg-[#0f172a] p-3 rounded border border-slate-700 h-32 overflow-y-auto w-full"><pre class="text-xs text-slate-400 font-mono whitespace-pre-wrap">${JSON.stringify(JSON.parse(r.response_json), null, 2)}</pre></div></td></tr>`).join('')
+            : `<tr><td colspan="2" class="px-6 py-8 text-center text-slate-500">No recent Bronze payloads found.</td></tr>`;
+
+        document.getElementById('ws-silver-data').innerHTML = data.silver_data.length > 0
+            ? data.silver_data.map(r => `<tr class="hover:bg-slate-800/50"><td class="px-6 py-3 font-bold text-white">${r.ticker}</td><td class="px-6 py-3 text-slate-400">${r.price_date}</td><td class="px-6 py-3 text-slate-300">$${parseFloat(r.open_price).toFixed(2)}</td><td class="px-6 py-3 text-emerald-400">$${parseFloat(r.high_price).toFixed(2)}</td><td class="px-6 py-3 text-rose-400">$${parseFloat(r.low_price).toFixed(2)}</td><td class="px-6 py-3 text-slate-300">$${parseFloat(r.close_price).toFixed(2)}</td><td class="px-6 py-3 text-slate-500">${parseInt(r.volume).toLocaleString()}</td></tr>`).join('')
+            : `<tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">No Silver records mapped.</td></tr>`;
+
+        document.getElementById('ws-gold-data').innerHTML = data.gold_data.length > 0
+            ? data.gold_data.map(r => `<tr class="hover:bg-slate-800/50"><td class="px-6 py-4 font-bold text-white">${r.company_name}</td><td class="px-6 py-4 font-mono text-sky-400">${r.ticker}</td><td class="px-6 py-4 text-yellow-400 font-bold">$${parseFloat(r.close_price).toFixed(2)}</td><td class="px-6 py-4 text-slate-400">${parseInt(r.volume).toLocaleString()}</td><td class="px-6 py-4 text-slate-500">${r.price_date}</td></tr>`).join('')
+            : `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-500">Gold materialized views are empty.</td></tr>`;
+    };
+</script>
+{% endblock %}

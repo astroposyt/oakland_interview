@@ -1,120 +1,94 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Medallion Data Layer Inspector</title>
-    <style>
-        body { font-family: sans-serif; margin: 0 auto; max-width: 1400px; padding: 20px; background: #fafafa; color: #333; }
-        h1 { border-bottom: 2px solid #ccc; padding-bottom: 10px; color: #1a237e; }
-        h2 { margin-top: 40px; color: #0d47a1; background: #e3f2fd; padding: 10px; border-left: 5px solid #0d47a1; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        th, td { text-align: left; padding: 12px; border: 1px solid #ddd; font-size: 14px; }
-        th { background: #f5f5f5; font-weight: bold; }
-        tr:nth-child(even) { background: #f9f9f9; }
-        .json-cell { max-width: 400px; max-height: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 11px; color: #555; display: block; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
-        .success { background: #e8f5e9; color: #2e7d32; }
-        .error { background: #ffebee; color: #c62828; }
-        .nav-btn { background: #1a237e; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-bottom: 20px; font-weight: bold; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}Data Viewer | Oakland{% endblock %}
 
-    <h1>🔍 Medallion Data Platform Layer Inspector</h1>
-    <a href="/control-panel" class="nav-btn">🔙 Back to Live Control Panel</a>
-    <p>This panel displays server-side rendered snapshots directly from the database tables to visualize processing transformations.</p>
+{% block content %}
+<div class="mb-8">
+    <h1 class="text-3xl font-extrabold text-white tracking-tight">Database Viewer</h1>
+    <p class="text-slate-400 mt-1">Direct static snapshots from the underlying Postgres tables.</p>
+</div>
 
-    <h2>🛢️ 1. Bronze Layer (Raw Invariant Audit Logs: `bronze_api_responses`)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>API Call Triggered</th>
-                <th>Ticker</th>
-                <th>Status</th>
-                <th>Ingested Timestamp</th>
-                <th>Raw JSON Payload Snippet</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in bronze_data %}
-            <tr>
-                <td>{{ row.id }}</td>
-                <td><strong>{{ row.api_called }}</strong></td>
-                <td><code>{{ row.ticker }}</code></td>
-                <td>
-                    <span class="badge {% if row.status == 'SUCCESS' %}success{% else %}error{% endif %}">
-                        {{ row.status }}
-                    </span>
-                </td>
-                <td>{{ row.extracted_at }}</td>
-                <td><span class="json-cell">{{ row.response_json }}</span></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="6" style="text-align: center; color: #999;">Bronze layer is currently empty. Run a pipeline to capture data.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="mb-12">
+    <div class="flex items-center space-x-3 mb-4">
+        <h2 class="text-xl font-bold text-amber-500">Bronze Layer</h2>
+        <span class="text-slate-500 text-sm border-l border-slate-600 pl-3">Table: bronze_api_responses</span>
+    </div>
+    <div class="bg-slate-850 border border-slate-800 rounded-xl overflow-x-auto shadow-sm">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                <tr><th class="px-4 py-3">ID</th><th class="px-4 py-3">Target</th><th class="px-4 py-3">Ticker</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Raw JSON</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for row in bronze_data %}
+                <tr class="hover:bg-slate-800/50">
+                    <td class="px-4 py-3 text-slate-500">{{ row.id }}</td>
+                    <td class="px-4 py-3 font-mono text-sky-400">{{ row.api_called }}</td>
+                    <td class="px-4 py-3 font-bold text-white">{{ row.ticker }}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-md {% if row.status == 'SUCCESS' %}bg-emerald-500/10 text-emerald-400{% else %}bg-rose-500/10 text-rose-400{% endif %}">{{ row.status }}</span></td>
+                    <td class="px-4 py-3"><div class="max-w-md overflow-hidden text-ellipsis font-mono text-xs text-slate-500">{{ row.response_json }}</div></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500 italic">Bronze layer is empty.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <h2>🥈 2. Silver Layer - Pricing Fact Table (`fact_daily_prices`)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Ticker</th>
-                <th>Price Date</th>
-                <th>Open</th>
-                <th>High</th>
-                <th>Low</th>
-                <th>Close</th>
-                <th>Volume</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in silver_prices %}
-            <tr>
-                <td><strong>{{ row.ticker }}</strong></td>
-                <td>{{ row.price_date }}</td>
-                <td>${{ "%0.2f" | format(row.open_price | float) }}</td>
-                <td>${{ "%0.2f" | format(row.high_price | float) }}</td>
-                <td>${{ "%0.2f" | format(row.low_price | float) }}</td>
-                <td><strong>${{ "%0.2f" | format(row.close_price | float) }}</strong></td>
-                <td>{{ "{:,}".format(row.volume | int) }}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="7" style="text-align: center; color: #999;">No pricing records currently normalized in Silver fact structures.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="mb-12">
+    <div class="flex items-center space-x-3 mb-4">
+        <h2 class="text-xl font-bold text-slate-300">Silver Layer: Prices</h2>
+        <span class="text-slate-500 text-sm border-l border-slate-600 pl-3">Table: fact_daily_prices</span>
+    </div>
+    <div class="bg-slate-850 border border-slate-800 rounded-xl overflow-x-auto shadow-sm">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                <tr><th class="px-4 py-3">Ticker</th><th class="px-4 py-3">Date</th><th class="px-4 py-3">Open</th><th class="px-4 py-3">High</th><th class="px-4 py-3">Low</th><th class="px-4 py-3">Close</th><th class="px-4 py-3">Volume</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for row in silver_prices %}
+                <tr class="hover:bg-slate-800/50">
+                    <td class="px-4 py-3 font-bold text-white">{{ row.ticker }}</td>
+                    <td class="px-4 py-3 text-slate-400">{{ row.price_date }}</td>
+                    <td class="px-4 py-3 text-slate-300">${{ "%0.2f" | format(row.open_price | float) }}</td>
+                    <td class="px-4 py-3 text-emerald-400">${{ "%0.2f" | format(row.high_price | float) }}</td>
+                    <td class="px-4 py-3 text-rose-400">${{ "%0.2f" | format(row.low_price | float) }}</td>
+                    <td class="px-4 py-3 font-bold text-white">${{ "%0.2f" | format(row.close_price | float) }}</td>
+                    <td class="px-4 py-3 text-slate-500">{{ "{:,}".format(row.volume | int) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500 italic">Silver prices table is empty.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <h2>🥈 3. Silver Layer - Balance Sheet Fact Table (`fact_balance_sheets`)</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Ticker</th>
-                <th>Fiscal Date Ending</th>
-                <th>Periodicity</th>
-                <th>Currency</th>
-                <th>Total Assets</th>
-                <th>Total Liabilities</th>
-                <th>Total Equity</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in silver_balances %}
-            <tr>
-                <td><strong>{{ row.ticker }}</strong></td>
-                <td>{{ row.fiscal_date_ending }}</td>
-                <td><span class="badge" style="background: #efebe9; color: #4e342e;">{{ row.period_type }}</span></td>
-                <td><code>{{ row.reported_currency }}</code></td>
-                <td>${{ "{:,}".format(row.total_assets | int) if row.total_assets else 'NULL' }}</td>
-                <td>${{ "{:,}".format(row.total_liabilities | int) if row.total_liabilities else 'NULL' }}</td>
-                <td><strong>${{ "{:,}".format(row.total_shareholder_equity | int) if row.total_shareholder_equity else 'NULL' }}</strong></td>
-            </tr>
-            {% else %}
-            <tr><td colspan="7" style="text-align: center; color: #999;">No accounting statements currently normalized in Silver fact structures.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-</body>
-</html>
+<div>
+    <div class="flex items-center space-x-3 mb-4">
+        <h2 class="text-xl font-bold text-slate-300">Silver Layer: Accounting</h2>
+        <span class="text-slate-500 text-sm border-l border-slate-600 pl-3">Table: fact_balance_sheets</span>
+    </div>
+    <div class="bg-slate-850 border border-slate-800 rounded-xl overflow-x-auto shadow-sm">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                <tr><th class="px-4 py-3">Ticker</th><th class="px-4 py-3">Fiscal Ending</th><th class="px-4 py-3">Period</th><th class="px-4 py-3">Currency</th><th class="px-4 py-3">Assets</th><th class="px-4 py-3">Liabilities</th><th class="px-4 py-3">Equity</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+                {% for row in silver_balances %}
+                <tr class="hover:bg-slate-800/50">
+                    <td class="px-4 py-3 font-bold text-white">{{ row.ticker }}</td>
+                    <td class="px-4 py-3 text-slate-400">{{ row.fiscal_date_ending }}</td>
+                    <td class="px-4 py-3"><span class="px-2 py-1 text-xs rounded-md bg-slate-700 text-slate-300">{{ row.period_type }}</span></td>
+                    <td class="px-4 py-3 font-mono text-sky-400">{{ row.reported_currency }}</td>
+                    <td class="px-4 py-3 text-slate-300">${{ "{:,}".format(row.total_assets | int) if row.total_assets else 'N/A' }}</td>
+                    <td class="px-4 py-3 text-slate-300">${{ "{:,}".format(row.total_liabilities | int) if row.total_liabilities else 'N/A' }}</td>
+                    <td class="px-4 py-3 font-bold text-white">${{ "{:,}".format(row.total_shareholder_equity | int) if row.total_shareholder_equity else 'N/A' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="px-4 py-8 text-center text-slate-500 italic">Silver balance sheets table is empty.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

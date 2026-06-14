@@ -1,0 +1,25 @@
+<div id="slide-1" class="slide block">
+    <div class="mb-6 flex items-center justify-between border-b border-slate-700 pb-4">
+        <div class="flex items-center space-x-3">
+            <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-900 bg-indigo-400 rounded-full">Step 1</span>
+            <h2 class="text-2xl font-bold text-white">State Management: Target Queues</h2>
+        </div>
+        <code class="text-slate-500 text-sm">dim_stocks filter</code>
+    </div>
+    
+    <div class="bg-slate-900 rounded-lg p-5 border-l-4 border-indigo-500 mb-6 text-slate-300 text-sm">
+        <strong class="text-white block mb-1">Architectural Context:</strong>
+        Before we pull data, we query the master <code>dim_stocks</code> table to find assets where <code>last_price_sync_at</code> is older than today. This acts as our asynchronous queue and prevents us from spamming the API with duplicate requests.
+    </div>
+
+    <div class="overflow-x-auto rounded-lg border border-slate-700">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+            <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                <tr><th class="px-6 py-4">Ticker</th><th class="px-6 py-4">Company Name</th><th class="px-6 py-4">Status</th></tr>
+            </thead>
+            <tbody id="ws-pending-syncs" class="divide-y divide-slate-800">
+                <tr><td colspan="3" class="px-6 py-8 text-center text-slate-500 italic">Waiting for WebSocket feed...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>

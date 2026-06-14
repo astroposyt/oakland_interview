@@ -1,121 +1,150 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Live Control Panel</title>
-</head>
-<body style="font-family: sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto;">
-    <h1>🛢️ Oakland Data Lake Control Panel (Live Stream)</h1>
-    <div id="status" style="color: orange; font-weight: bold;">Status: Connecting...</div>
-    <hr>
+{% extends "base.html" %}
+{% block title %}Live Operations | Oakland{% endblock %}
 
-    <h2>1. Add New Asset Monitored</h2>
-    <input type="text" id="ticker" placeholder="Ticker (e.g. AAPL)">
-    <input type="text" id="name" placeholder="Company Name">
-    <button onclick="sendAction('add')">Add Ticker</button>
-    <button onclick="sendAction('sync')" style="margin-left: 20px; background: #e1f5fe;">🔄 Run Active Sync Pipelines</button>
+{% block content %}
+<div class="flex justify-between items-end mb-8">
+    <div>
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Live Operations Panel</h1>
+        <p class="text-slate-400 mt-1">Real-time WebSocket streaming dashboard.</p>
+    </div>
+    <div id="status-badge" class="px-4 py-2 rounded-lg font-bold text-sm bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center space-x-2">
+        <span class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span></span>
+        <span>Connecting...</span>
+    </div>
+</div>
 
-    <hr>
+<div class="bg-slate-850 border border-slate-800 rounded-xl p-6 mb-8 shadow-sm flex flex-wrap gap-4 items-end">
+    <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Ticker</label>
+        <input type="text" id="ticker" placeholder="e.g. AAPL" class="bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5">
+    </div>
+    <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wider">Company Name</label>
+        <input type="text" id="name" placeholder="Apple Inc." class="bg-slate-900 border border-slate-700 text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5">
+    </div>
+    <button onclick="sendAction('add')" class="bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-lg text-sm px-5 py-2.5 transition">Add Asset</button>
+    
+    <div class="flex-grow"></div>
+    <button onclick="sendAction('sync')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg text-sm px-5 py-2.5 flex items-center transition shadow-lg shadow-emerald-900/20">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Trigger Full Medallion Sync
+    </button>
+</div>
 
-    <div style="display: flex; gap: 40px;">
-        <div style="flex: 1;">
-            <h3>📋 Currently Tracked Tickers</h3>
-            <table border="1" cellpadding="5" style="width: 100%; border-collapse: collapse;">
-                <thead><tr style="background: #f5f5f5;"><th>Ticker</th><th>Name</th><th>Action</th></tr></thead>
-                <tbody id="stocks-list"></tbody>
-            </table>
-        </div>
-
-        <div style="flex: 2;">
-            <h3>🏆 All-Time High Records (Max Day)</h3>
-            <table border="1" cellpadding="5" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <thead><tr style="background: #f5f5f5;"><th>Ticker</th><th>Date</th><th>Peak High</th><th>Close</th><th>Volume</th></tr></thead>
-                <tbody id="max-day-body"></tbody>
-            </table>
-
-            <h3>⏱️ Chronological Price Logs</h3>
-            <table border="1" cellpadding="5" style="width: 100%; border-collapse: collapse;">
-                <thead><tr style="background: #f5f5f5;"><th>Ticker</th><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th></tr></thead>
-                <tbody id="recent-prices-body"></tbody>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="col-span-1">
+        <h3 class="text-lg font-bold text-white mb-4 flex items-center"><span class="mr-2">📋</span> Tracked Assets</h3>
+        <div class="bg-slate-850 border border-slate-800 rounded-xl overflow-hidden shadow-sm">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+                <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                    <tr><th class="px-4 py-3">Ticker</th><th class="px-4 py-3">Action</th></tr>
+                </thead>
+                <tbody id="stocks-list" class="divide-y divide-slate-800"></tbody>
             </table>
         </div>
     </div>
 
-    <script>
-        const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
-       const wsUrl = wsProtocol + window.location.host + "/ws/dashboard";
-        let ws = new WebSocket(wsUrl);
+    <div class="col-span-1 lg:col-span-2 space-y-8">
+        <div>
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center"><span class="mr-2">🏆</span> Peak Valuation Records</h3>
+            <div class="bg-slate-850 border border-slate-800 rounded-xl overflow-x-auto shadow-sm">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                        <tr><th class="px-4 py-3">Ticker</th><th class="px-4 py-3">Peak Date</th><th class="px-4 py-3">High</th><th class="px-4 py-3">Volume</th></tr>
+                    </thead>
+                    <tbody id="max-day-body" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </div>
 
-        ws.onopen = () => {
-            document.getElementById('status').innerText = "Status: Live Subscribed 🟢";
-            document.getElementById('status').style.color = "green";
-        };
+        <div>
+            <h3 class="text-lg font-bold text-white mb-4 flex items-center"><span class="mr-2">⏱️</span> Live Event Stream</h3>
+            <div class="bg-slate-850 border border-slate-800 rounded-xl overflow-x-auto shadow-sm">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                        <tr><th class="px-4 py-3">Ticker</th><th class="px-4 py-3">Date</th><th class="px-4 py-3">Open</th><th class="px-4 py-3">Close</th></tr>
+                    </thead>
+                    <tbody id="recent-prices-body" class="divide-y divide-slate-800"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-        ws.onclose = () => {
-            document.getElementById('status').innerText = "Status: Connection Closed 🔴";
-            document.getElementById('status').style.color = "red";
-        };
+{% block scripts %}
+<script>
+    const wsProtocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+    const wsUrl = wsProtocol + window.location.host + "/ws/dashboard";
+    let ws = new WebSocket(wsUrl);
 
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            
-            document.getElementById('stocks-list').innerHTML = data.stocks.map(s => `
-                <tr>
-                    <td><strong>${s.ticker}</strong></td>
-                    <td>${s.company_name}</td>
-                    <td><button onclick="sendAction('untrack', '${s.ticker}')">Remove</button></td>
-                </tr>
-            `).join('');
+    ws.onopen = () => {
+        const badge = document.getElementById('status-badge');
+        badge.className = "px-4 py-2 rounded-lg font-bold text-sm bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center space-x-2";
+        badge.innerHTML = `<span class="relative flex h-3 w-3"><span class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span></span><span>Live Subscribed</span>`;
+    };
 
-            document.getElementById('max-day-body').innerHTML = data.max_days.map(r => `
-                <tr>
-                    <td><strong>${r.ticker}</strong></td>
-                    <td>${r.price_date}</td>
-                    <td style="color: green; font-weight: bold;">$${parseFloat(r.high_price).toFixed(2)}</td>
-                    <td>$${parseFloat(r.close_price).toFixed(2)}</td>
-                    <td>${parseInt(r.volume).toLocaleString()}</td>
-                </tr>
-            `).join('');
+    ws.onclose = () => {
+        const badge = document.getElementById('status-badge');
+        badge.className = "px-4 py-2 rounded-lg font-bold text-sm bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center space-x-2";
+        badge.innerHTML = `<span class="relative flex h-3 w-3"><span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span></span><span>Disconnected</span>`;
+    };
 
-            document.getElementById('recent-prices-body').innerHTML = data.history.map(r => `
-                <tr>
-                    <td>${r.ticker}</td>
-                    <td>${r.price_date}</td>
-                    <td>$${parseFloat(r.open_price).toFixed(2)}</td>
-                    <td>$${parseFloat(r.high_price).toFixed(2)}</td>
-                    <td>$${parseFloat(r.low_price).toFixed(2)}</td>
-                    <td><strong>$${parseFloat(r.close_price).toFixed(2)}</strong></td>
-                </tr>
-            `).join('');
-        };
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        document.getElementById('stocks-list').innerHTML = data.stocks.map(s => `
+            <tr class="hover:bg-slate-800/50">
+                <td class="px-4 py-3"><span class="font-bold text-white">${s.ticker}</span><br><span class="text-xs text-slate-500">${s.company_name}</span></td>
+                <td class="px-4 py-3"><button onclick="sendAction('untrack', '${s.ticker}')" class="text-rose-400 hover:text-rose-300 text-xs font-bold uppercase tracking-wider">Untrack</button></td>
+            </tr>
+        `).join('');
 
-        async function sendAction(type, targetTicker = '') {
-            let body = {};
-            if (type === 'add') {
-                body = { 
-                    ticker: document.getElementById('ticker').value, 
-                    company_name: document.getElementById('name').value 
-                };
-                if(!body.ticker || !body.company_name) return alert('Missing values');
-            }
-            
-            const urlMap = {
-                'add': '/api/v1/control/stocks',
-                'untrack': `/api/v1/control/stocks/untrack/${targetTicker}`,
-                'sync': '/api/v1/control/stocks/sync'
+        document.getElementById('max-day-body').innerHTML = data.max_days.map(r => `
+            <tr class="hover:bg-slate-800/50">
+                <td class="px-4 py-3 font-mono text-sky-400">${r.ticker}</td>
+                <td class="px-4 py-3 text-slate-300">${r.price_date}</td>
+                <td class="px-4 py-3 font-bold text-emerald-400">$${parseFloat(r.high_price).toFixed(2)}</td>
+                <td class="px-4 py-3 text-slate-400">${parseInt(r.volume).toLocaleString()}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('recent-prices-body').innerHTML = data.history.map(r => `
+            <tr class="hover:bg-slate-800/50">
+                <td class="px-4 py-3 font-bold text-white">${r.ticker}</td>
+                <td class="px-4 py-3 text-slate-400">${r.price_date}</td>
+                <td class="px-4 py-3 text-slate-300">$${parseFloat(r.open_price).toFixed(2)}</td>
+                <td class="px-4 py-3 font-bold text-white">$${parseFloat(r.close_price).toFixed(2)}</td>
+            </tr>
+        `).join('');
+    };
+
+    async function sendAction(type, targetTicker = '') {
+        let body = {};
+        if (type === 'add') {
+            body = { 
+                ticker: document.getElementById('ticker').value, 
+                company_name: document.getElementById('name').value 
             };
-
-            await fetch(urlMap[type], {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: type === 'add' ? JSON.stringify(body) : null
-            });
-
-            if(type === 'add') {
-                document.getElementById('ticker').value = '';
-                document.getElementById('name').value = '';
-            }
+            if(!body.ticker || !body.company_name) return alert('Missing values');
         }
-    </script>
-</body>
-</html>
+        
+        const urlMap = {
+            'add': '/api/v1/control/stocks',
+            'untrack': `/api/v1/control/stocks/untrack/${targetTicker}`,
+            'sync': '/api/v1/control/stocks/sync'
+        };
+
+        await fetch(urlMap[type], {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: type === 'add' ? JSON.stringify(body) : null
+        });
+
+        if(type === 'add') {
+            document.getElementById('ticker').value = '';
+            document.getElementById('name').value = '';
+        }
+    }
+</script>
+{% endblock %}

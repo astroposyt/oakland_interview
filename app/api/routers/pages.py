@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from app.repositories.bronze_repo import BronzeRepository
 from app.repositories.silver_repo import SilverRepository
-
+from app.repositories.gold_repo import GoldRepository
 router = APIRouter(tags=["UI"])
 templates = Jinja2Templates(directory="app/templates")
 from app.core.logger import get_logger
@@ -30,5 +30,26 @@ async def render_data_viewer(request: Request):
             "bronze_data": bronze_rows,
             "silver_prices": silver_prices,
             "silver_balances": silver_balances
+        }
+    )
+
+@router.get("/pipeline-deck", response_class=HTMLResponse)
+async def render_pipeline_deck(request: Request):
+    """Interactive slide deck showcasing the Medallion architecture flow."""
+    bronze_rows = await BronzeRepository.fetch_diagnostic_bronze(limit=3)
+    silver_prices = await SilverRepository.fetch_diagnostic_silver_prices(limit=10)
+    silver_balances = await SilverRepository.fetch_diagnostic_silver_balances(limit=10)
+    gold_prices = await GoldRepository.fetch_latest_gold_prices()
+    gold_balances = await GoldRepository.fetch_latest_gold_balance_sheets("Annual")
+
+    return templates.TemplateResponse(
+        request=request, 
+        name="pipeline_deck.html",
+        context={
+            "bronze_data": bronze_rows,
+            "silver_prices": silver_prices,
+            "silver_balances": silver_balances,
+            "gold_prices": gold_prices,
+            "gold_balances": gold_balances
         }
     )
