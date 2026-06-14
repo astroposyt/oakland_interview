@@ -35,6 +35,21 @@ class BalanceSheetRecord(BaseModel):
             if val == "None":
                 data[key] = None
         return data
+    
+    @model_validator(mode="after")
+    def validate_accounting_equation(self) -> "BalanceSheetRecord":
+
+        if (self.total_assets and self.total_assets < 0) or (self.total_liabilities and self.total_liabilities < 0):
+            raise ValueError("Data QA Alert: Core accounting ledger fields cannot be negative.")
+
+        if self.total_assets and self.total_liabilities and self.total_shareholder_equity:
+            expected_balance = self.total_liabilities + self.total_shareholder_equity
+            if self.total_assets != expected_balance:
+                raise ValueError(
+                    f"Data QA Alert: Balance Sheet is out of equilibrium! "
+                    f"Assets ({self.total_assets}) != Liabilities + Equity ({expected_balance})"
+                )
+        return self
 
 class AlphaVantageBalanceParser(BaseModel):
     annual_reports: List[BalanceSheetRecord]

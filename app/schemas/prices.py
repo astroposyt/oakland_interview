@@ -11,6 +11,18 @@ class DailyPriceRecord(BaseModel):
     close_price: Decimal
     volume: int
 
+    @model_validator(mode="after")
+    def validate_price_bounds(self) -> "DailyPriceRecord":
+
+        if any(p <= 0 for p in [self.open_price, self.high_price, self.low_price, self.close_price]):
+            raise ValueError("Data QA Alert: Trading prices must be strictly positive.")
+        if self.volume < 0:
+            raise ValueError("Data QA Alert: Traded volume cannot be negative.")
+        
+        if self.low_price > self.high_price:
+            raise ValueError("Data QA Alert: Low trading bounds cannot exceed high boundaries.")
+        return self
+
 class AlphaVantagePriceParser(BaseModel):
     records: List[DailyPriceRecord]
 
