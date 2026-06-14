@@ -1,3 +1,4 @@
+import os
 import asyncio
 import typer
 from rich.console import Console
@@ -12,6 +13,7 @@ from app.core.db import init_db_pool, close_db_pool
 app = typer.Typer(help="Oakland Data Lake CLI")
 console = Console()
 
+FEATURE_CLI_SYNC = os.getenv("ENABLE_CLI_SYNC", "false").lower() == "true"
 
 def run_async(coro):
     async def _wrapper():
@@ -46,7 +48,14 @@ def untrack_stock(ticker: str = typer.Option(..., "-t", help="Stock ticker symbo
 
 @app.command("sync")
 def sync_pipelines():
-    """Execute ETL pipelines for all monitored stocks."""
+    """Execute ETL pipelines for all monitored stocks (Gated by Feature Flag)."""
+
+    if not FEATURE_CLI_SYNC:
+        console.print("\n[bold red]🚫 Access Denied[/bold red]")
+        console.print("[yellow]The 'sync' feature is currently deactivated via configuration feature flags.[/yellow]")
+        console.print("To activate this pipeline engine, update [bold].env[/bold] to: [green]ENABLE_CLI_SYNC=true[/green]\n")
+        raise typer.Exit(code=1)
+
     async def _sync():
         stocks = await StockRepository.fetch_tracked_stocks()
         if not stocks:
