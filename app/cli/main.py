@@ -7,9 +7,21 @@ from rich.table import Table
 from app.repositories.stock_repo import StockRepository
 from app.repositories.gold_repo import GoldRepository
 from app.services.ingestion_service import StockIngestionService
+from app.core.db import init_db_pool, close_db_pool
 
 app = typer.Typer(help="Oakland Data Lake CLI")
 console = Console()
+
+
+def run_async(coro):
+    async def _wrapper():
+        await init_db_pool()
+        try:
+            await coro
+        finally:
+            await close_db_pool()
+    return asyncio.run(_wrapper())
+
 
 def run_async(coro):
     """Helper to run async functions in synchronous Typer commands."""

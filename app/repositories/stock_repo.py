@@ -32,3 +32,33 @@ class StockRepository:
         async with pool.acquire() as conn:
             rows = await conn.fetch(query)
             return [dict(r) for r in rows]
+        
+    @staticmethod
+    async def fetch_stocks_needing_price_sync() -> list[dict]:
+        pool = get_pool()
+        query = load_query("fetch_stocks_needing_price_sync.sql")
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(query)
+            return [dict(r) for r in rows]
+
+    @staticmethod
+    async def fetch_stocks_needing_balance_sheet_sync() -> list[dict]:
+        pool = get_pool()
+        query = load_query("fetch_stocks_needing_balance_sheet_sync.sql")
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(query)
+            return [dict(r) for r in rows]
+
+    @staticmethod
+    async def update_price_sync_time(ticker: str) -> None:
+        pool = get_pool()
+        query = load_query("update_price_sync_time.sql")
+        async with pool.acquire() as conn:
+            await conn.execute(query, ticker.upper())
+
+    @staticmethod
+    async def update_balance_sheet_sync_time(ticker: str) -> None:
+        pool = get_pool()
+        query = load_query("update_balance_sheet_sync_time.sql")
+        async with pool.acquire() as conn:
+            await conn.execute(query, ticker.upper())

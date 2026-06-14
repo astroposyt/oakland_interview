@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS dim_stocks (
     ticker VARCHAR(10) UNIQUE NOT NULL,
     company_name VARCHAR(255) NOT NULL,
     should_fetch BOOLEAN DEFAULT TRUE,
+    last_price_sync_at TIMESTAMP WITH TIME ZONE,
+    last_balance_sheet_sync_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

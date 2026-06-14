@@ -5,8 +5,9 @@ import logging
 from app.services.ingestion_service import StockIngestionService
 from app.repositories.stock_repo import StockRepository
 from app.repositories.gold_repo import GoldRepository
+from app.core.logger import get_logger
 
-logger = logging.getLogger("oakland.api")
+logger = get_logger(__name__)
 
 
 router = APIRouter(prefix="/api/v1")
@@ -17,19 +18,17 @@ class StockCreatePayload(BaseModel):
 
 @router.post("/control/stocks", tags=["Admin Control"])
 async def add_stock(payload: StockCreatePayload):
-    """Registers a new stock, triggers an immediate ETL extraction, and refreshes the dashboard."""
+    """Registers a new stock to be picked up by the next automated sync cycle."""
     try:
         await StockRepository.add_tracked_stock(payload.ticker, payload.company_name)
         
-        await StockIngestionService.process_daily_prices(payload.ticker)
-        await StockIngestionService.process_balance_sheets(payload.ticker)
-        
-        await GoldRepository.refresh_materialized_views()
-        
-        return {"status": "success", "message": f"{payload.ticker} added and data fetched."}
+        return {
+            "status": "success", 
+            "message": f"Successfully registered {payload.ticker.upper()} for future tracking cycles."
+        }
     except Exception as e:
         logger.error(f"Failed to add stock {payload.ticker}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal Server Error during stock ingestion.")
+        raise HTTPException(status_code=500, detail="Internal Server Error during stock registration.")
 
 @router.post("/control/stocks/untrack/{ticker}", tags=["Admin Control"])
 async def untrack_stock(ticker: str):

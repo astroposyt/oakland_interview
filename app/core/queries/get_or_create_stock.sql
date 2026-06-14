@@ -1,9 +1,5 @@
-WITH ins AS (
-    INSERT INTO dim_stocks (ticker, company_name, should_fetch)
-    VALUES ($1, $2, TRUE)
-    ON CONFLICT (ticker) DO UPDATE SET should_fetch = TRUE
-    RETURNING id
-)
-SELECT id FROM ins
-UNION ALL
-SELECT id FROM dim_stocks WHERE ticker = $1;
+INSERT INTO dim_stocks (ticker, company_name, should_fetch)
+VALUES ($1, $2, TRUE)
+ON CONFLICT (ticker) DO UPDATE SET 
+    should_fetch = TRUE
+RETURNING id;
