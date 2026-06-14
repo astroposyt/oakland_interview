@@ -50,6 +50,7 @@ class StockIngestionService:
             logger.info(f"Loaded {len(valid_records)} clean rows for {ticker}. Skipped {corrupted_records_count} bad rows.")
         else:
             logger.error(f"Pipeline failed completely for {ticker}: No rows passed validation constraints.")
+            raise ValueError("Data schema changed or invalid")
 
         return raw_data
     

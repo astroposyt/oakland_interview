@@ -15,6 +15,7 @@ services:
       - stock_network
 
   api-server:
+    build: .
     image: ghcr.io/astroposyt/oakland-api:latest
     container_name: api_server
     ports:
