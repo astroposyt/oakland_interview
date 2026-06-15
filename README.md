@@ -21,7 +21,7 @@ https://www.loom.com/share/6b3ff9a411764ff89aa178f0d774cfdb
 
 https://www.loom.com/share/193cf02a8f2946e58da171223fd556fc
 
-### Accessing the Deployed Instance
+### Accessing the Deployed Instancea
 
 Experience the live system in action:
 
@@ -239,7 +239,7 @@ This project implements a stock price monitoring system with a flexible, scalabl
 
 ### System Architecture
 
-
+![Current Architecture](https://raw.githubusercontent.com/astroposyt/oakland_interview/main/imagesForReadMe/architectureNow.png)
 
 ### Technology Stack & Rationale
 
@@ -293,29 +293,29 @@ The database follows a three-layer medallion approach optimised for read-heavy w
 │                 GOLD LAYER                           │
 │          (Materialised Views - Latest Data)          │
 │                                                      │
-│  ◆ daily_stock_prices_latest (denormalised view)    │
-│  ◆ Accelerates frequent read queries                │
+│  ◆ daily_stock_prices_latest (denormalised view)     │
+│  ◆ Accelerates frequent read queries                 │
 └──────────────────────────────────────────────────────┘
                           ▲
                           │
-┌──────────────────────────┼──────────────────────────┐
-│          SILVER LAYER    │                          │
+┌─────────────────────────┼──────────────────────────┐
+│          SILVER LAYER   │                          │
 │   (Normalised Metadata & Aggregates)               │
 │                                                    │
-│  • stock_metadata (company info, active flag)     │
-│  • price_history (normalised daily prices)        │
-│  • stock (with should_fetch flag for scheduling) │
-└──────────────────────────────────────────────────────┘
+│  • stock_metadata (company info, active flag)      │
+│  • price_history (normalised daily prices)         │
+│  • stock (with should_fetch flag for scheduling)   │
+└────────────────────────────────────────────────────┘
                           ▲
                           │
-┌──────────────────────────┼──────────────────────────┐
-│          BRONZE LAYER    │                          │
+┌─────────────────────────┼──────────────────────────┐
+│          BRONZE LAYER   │                          │
 │      (Raw API Responses)                           │
 │                                                    │
-│  ◆ raw_api_responses (raw JSON storage)          │
-│  ◆ Enables retroactive data fixes without re-API  │
-│  ◆ Audit trail & historical accuracy              │
-└──────────────────────────────────────────────────────┘
+│  ◆ raw_api_responses (raw JSON storage)            │
+│  ◆ Enables retroactive data fixes without re-API   │
+│  ◆ Audit trail & historical accuracy               │
+└────────────────────────────────────────────────────┘
 ```
 
 **Design Rationale:**
@@ -432,6 +432,29 @@ The database follows a three-layer medallion approach optimised for read-heavy w
 ---
 
 ## Strengths & Weaknesses Analysis
+
+### Design decisions summary
+
+This is by no means a perfect solution. It could easily be argued its missing stuff and thats its over engineered based on the requirements. I made the assumption data was gotten not very often, but reads are very high. 
+For me the main problems are as follows:
+
+json responses stored in the database. object storage is much better place and ideally in a compressed file such as parquet.
+the scheduler is currently internal, which works well until scaling up, for example if multiple replices or distributed computing. Coordinating cron jobs needs to be moved externally at a certain scale.
+The materialized view just runs against all the data. This will not scale well. The materialized view is a strong idea, but not having its refresh subsetted means it grows in scale each day.
+No dead letter queue, although commented where it would be, havent actually implemented
+The business logic for the validation is not validated and probably has bugs. In the real world I would ensure more edge cases and real decisions are accounted for, this was just a mock.
+The websocket is implemented badly. THe websockets are a nice feature, but at the moment are very dumb. Logic that listens to data changes should be inplace to prevent thousands of messages a minute being sent to frontends.
+There is also no database migration plan. In the real world this would cause issues.
+Also decided to ignore security for the time being. Mostly a decision to focus on the data but also authentication requirements change based on the customer and regulations
+
+That being said, the foundation is strong.
+The tables are highly idempotent with upserts being in place. Recalls do not cause hundereds of rows.
+The scalability is high barring a few easily fixed issues.
+The medallion architecutre allows high performance reads for end users, flexibility for developers and the ability to retrofit or debug in the future easily
+Data issues are captured upstream at near source.
+I also batched the writes to the database to prevent unnecceasry calls and strains etc. 
+
+I personally believe this is a great starting framework focussing on average scalability with high flexibility. 
 
 ### What Works Well (Strengths)
 
