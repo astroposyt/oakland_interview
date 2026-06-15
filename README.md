@@ -239,30 +239,7 @@ This project implements a stock price monitoring system with a flexible, scalabl
 
 ### System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Frontend (Static)                        │
-│                    Tailwind CSS + WebSockets                     │
-└────────────────┬────────────────────────────────────────────────┘
-                 │
-                 ├─────── REST API ───────┐
-                 │                        │
-                 └────── WebSockets ──────┤
-                                          │
-┌─────────────────────────────────────────▼────────────────────────┐
-│                      FastAPI Backend                             │
-│  (Async I/O, Concurrent Operations, CLI Interface)              │
-└────────┬─────────────────────────┬──────────────────────────────┘
-         │                         │
-         ├──── Internal Scheduler ─┤
-         │     (Cron Coordinator)  │
-         │                         │
-    ┌────▼──────────────┐  ┌──────▼──────────────────┐
-    │  Vantage Alpha    │  │   PostgreSQL Database   │
-    │  API Integration  │  │   (Medallion Schema)    │
-    │  (REST, no SDK)   │  │                         │
-    └───────────────────┘  └──────────────────────────┘
-```
+
 
 ### Technology Stack & Rationale
 
