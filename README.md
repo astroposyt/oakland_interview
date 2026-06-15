@@ -12,7 +12,7 @@ A flexible, scalable stock price monitoring system demonstrating data ingestion,
 4. [Design Decisions & Trade-offs](#design-decisions--trade-offs)
 5. [What Works Well](#what-works-well)
 6. [Known Limitations & Future Improvements](#known-limitations--future-improvements)
-7. [Deployment](#deployment)
+7. [CI/CD](#deployment)
 
 ---
 
@@ -33,6 +33,9 @@ When exploring the system, I recommend **opening two browser tabs side-by-side:*
 2. **Pipeline Deck Tab** – http://localhost:8000/pipeline-deck  
    - Watch the pipeline visualisation update in **real-time** as data flows through Bronze → Silver → Gold layers
    - This shows the medallion architecture in action
+
+3. **Silver data layer** – http://localhost:8000/data-viewer  
+   - See the most recent data in the silver star schema layer
 
 ### Video Walkthroughs
 
