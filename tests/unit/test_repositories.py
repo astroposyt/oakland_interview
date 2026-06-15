@@ -11,7 +11,6 @@ import json
 async def test_stock_repo_untrack_stock(mock_load_query, mock_get_pool):
     mock_load_query.return_value = "UPDATE dim_stocks SET should_fetch = FALSE WHERE ticker = $1;"
     
-    # Mocking asyncpg.Pool and its acquire() context manager
     mock_conn = AsyncMock()
     mock_pool = MagicMock()
     mock_pool.acquire.return_value.__aenter__.return_value = mock_conn

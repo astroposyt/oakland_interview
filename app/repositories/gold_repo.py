@@ -39,7 +39,6 @@ class GoldRepository:
         pool = get_pool()
         query = load_query("fetch_latest_gold_balance_sheets.sql")
         async with pool.acquire() as conn:
-            # Enforce capitalization to match standard DB entries ('Annual' / 'Quarterly')
             rows = await conn.fetch(query, period_type.capitalize())
             return [dict(r) for r in rows]
 

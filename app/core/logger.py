@@ -59,13 +59,13 @@ def setup_logging() -> None:
             },
         },
         "loggers": {
-            # Root logger for our application
+
             "oakland": {
                 "handlers": ["console"],
                 "level": log_level,
                 "propagate": False,
             },
-            # Keep Uvicorn/FastAPI logs separate but uniformly formatted
+          
             "uvicorn": {
                 "handlers": ["console"],
                 "level": "INFO",
@@ -81,7 +81,6 @@ def get_logger(name: str) -> logging.Logger:
     Dependency Injection mechanism for logging.
     Ensures all app loggers sit under the 'oakland.' namespace.
     """
-    # If the user passes __name__, it creates a hierarchy like 'oakland.app.core.database'
     if not name.startswith("oakland."):
         name = f"oakland.{name}"
     return logging.getLogger(name)
