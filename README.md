@@ -15,6 +15,8 @@
 
 ## Demo
 
+https://www.loom.com/share/6b3ff9a411764ff89aa178f0d774cfdb
+
 ### Accessing the Deployed Instance
 
 Experience the live system in action:
