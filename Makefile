@@ -41,10 +41,7 @@ cli-sync:
 	docker compose exec api-server python -m app.cli.main sync
 
 cli-gold-prices:
-	docker compose exec api-server python -m app.cli.main gold --type prices
+	docker compose exec api-server python -m app.cli.main latest-gold
 
 cli-untrack:
 	docker compose exec api-server python -m app.cli.main untrack --ticker $(t)
-
-cli-max-day:
-	docker compose exec api-server python -m app.cli.main max-day $(if $(t),--ticker $(t),)

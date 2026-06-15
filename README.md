@@ -73,6 +73,11 @@ The default configuration uses the mock API (`USE_MOCK_API=true`), which allows 
 ```bash
 make start
 ```
+or on windows
+
+```powershell
+docker-compose up -d
+```
 
 This command:
 1. Builds Docker images (if necessary)
@@ -86,7 +91,11 @@ On first run, the database needs initialised with `init.sql`.
 ```bash
 make init-db
 ```
+or on windows
 
+```powershell
+docker-compose exec postgres psql -U postgres -f /docker-entrypoint-initdb.d/init.sql
+```
 This creates all tables in the database.
 
 ### Using the Live API
@@ -122,7 +131,15 @@ make stop
 # Reset everything (destroys database)
 make clean
 ```
+or on windows
 
+```powershell
+docker-compose exec api-server pytest
+```
+
+```powershell
+docker-compose down -v
+```
 ---
 
 ## CLI Operations
@@ -611,6 +628,23 @@ Developers iterate faster hitting a local mock server (< 1ms) versus rate-limite
 
 ---
 
+#### 7. Websocket logic
+
+**Current Limitation:**
+- Has no logic looking for data mutation etc, simply resends every 1.5 seconds
+- Minimal advantage as is over polling
+
+**Future Approach:**
+- Only resend data on data mutation
+
+---
+#### 8. Business logic
+
+**Current Limitation:**
+- Business logic has not been developed properly. There are likely many edge cases
+
+**Future Approach:**
+- Properly and iteratively develop validations to ensure data is correct at source
 
 ## Getting Help
 

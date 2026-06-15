@@ -66,16 +66,21 @@ def sync_pipelines():
         console.print("[bold green]Synchronization complete.[/bold green]")
     run_async(_sync())
 
-@app.command("prices")
-def view_prices(limit: int = typer.Option(5, "-l", help="Number of records to return")):
-    """View chronological historical data from Gold tables."""
+@app.command("latest-gold")
+def view_latest_gold():
+    """View the absolute latest real-time record materialized inside the Gold Layer."""
     async def _view():
-        records = await GoldRepository.fetch_recent_prices(limit)
+        records = await GoldRepository.fetch_latest_gold_prices()
         
-        table = Table("Ticker", "Date", "Open", "High", "Low", "Close", "Volume", title="Recent Prices")
+        table = Table("Ticker", "Company", "Date", "Close Price", "Volume", title="🥇 Gold Materialized View Snapshot")
         for r in records:
-            table.add_row(r["ticker"], str(r["price_date"]), str(r["open_price"]), 
-                          str(r["high_price"]), str(r["low_price"]), str(r["close_price"]), str(r["volume"]))
+            table.add_row(
+                r["ticker"], 
+                r["company_name"], 
+                str(r["price_date"]), 
+                f"${float(r['close_price']):.2f}", 
+                f"{int(r['volume']):,}"
+            )
         console.print(table)
     run_async(_view())
 

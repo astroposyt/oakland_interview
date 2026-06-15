@@ -1,7 +1,7 @@
 from pydantic import ValidationError
 from app.core.api_client import get_api_client
 from app.core.logger import get_logger
-from app.schemas.prices import AlphaVantagePriceParser
+
 from app.repositories.bronze_repo import BronzeRepository
 from app.repositories.silver_repo import SilverRepository
 from app.schemas.balance_sheets import AlphaVantageBalanceParser, BalanceSheetRecord
