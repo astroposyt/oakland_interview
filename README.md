@@ -34,8 +34,6 @@ When exploring the system, I recommend **opening two browser tabs side-by-side:*
    - Watch the pipeline visualisation update in **real-time** as data flows through Bronze → Silver → Gold layers
    - This shows the medallion architecture in action
 
-The pipeline deck is the killer feature: you see data mutations propagate through the system instantaneously.
-
 ### Video Walkthroughs
 
 - **[System Overview & Architecture](https://www.loom.com/share/193cf02a8f2946e58da171223fd556fc)** – Conceptual walk-through of the design and data flow (watch at 1.5x–2x speed)
@@ -186,36 +184,8 @@ To connect to real stock data from Alpha Vantage:
 
 The system uses a three-layer approach optimised for read-heavy workloads:
 
-```
-┌──────────────────────────────────────────────────────┐
-│                 GOLD LAYER                           │
-│          (Materialised Views – Latest Data)          │
-│                                                      │
-│  • daily_stock_prices_latest (denormalised view)     │
-│  • Optimised for O(1) dashboard queries              │
-└──────────────────────────────────────────────────────┘
-                          ▲
-                          │
-┌─────────────────────────┼──────────────────────────┐
-│          SILVER LAYER   │                          │
-│   (Normalised Metadata & Aggregates)               │
-│                                                    │
-│  • stock_metadata (company info, active flag)      │
-│  • price_history (normalised daily prices)         │
-│  • stock (scheduling metadata)                     │
-└────────────────────────────────────────────────────┘
-                          ▲
-                          │
-┌─────────────────────────┼──────────────────────────┐
-│          BRONZE LAYER   │                          │
-│      (Raw API Responses)                           │
-│                                                    │
-│  • raw_api_responses (unmodified JSON)             │
-│  • Enables data retrofitting without re-API calls  │
-│  • Immutable audit trail                           │
-└────────────────────────────────────────────────────┘
-```
-
+![Schema Summary](https://raw.githubusercontent.com/astroposyt/oakland_interview/main/imagesForReadMe/schemaSummary.png)
+![Schema](https://raw.githubusercontent.com/astroposyt/oakland_interview/main/imagesForReadMe/schema.png)
 **Design Rationale:**
 - **Bronze:** Preserves raw responses for debugging and retrofitting without hitting API rate limits
 - **Silver:** Normalised operational data with strong schemas
@@ -223,17 +193,7 @@ The system uses a three-layer approach optimised for read-heavy workloads:
 
 ### API Integration Strategy
 
-```
-Local Mock API ──┬──→ Lightweight development (no rate limits)
-                 │
-                 └──→ Switch to live API when needed
-                      ↓
-                 Vantage Alpha API
-                      ↓
-                 Anti-Corruption Layer (Pydantic Validation)
-                      ↓
-                 Database (UPSERT for idempotency)
-```
+![Client Factory - API and Mock API interchangeability](https://raw.githubusercontent.com/astroposyt/oakland_interview/main/imagesForReadMe/clientFactory.png)
 
 **Key Decisions:**
 - Direct REST calls (no SDK lock-in)
@@ -252,7 +212,7 @@ This is a working system, not a perfect one. The design reflects specific assump
 
 **Decision:** Materialised views in the Gold layer pre-aggregate latest prices for O(1) reads.
 
-**Trade-off:** One-time write cost is higher (3 tables to manage), but every subsequent read is instant.
+**Trade-off:** One-time write cost is higher (3 layers of table/view to manage), but every subsequent read is instant.
 
 ### Assumption: Distributed System Scaling
 
@@ -308,14 +268,15 @@ New team members onboard in minutes. No "works on my machine" surprises. Staging
 - Local mock server returns realistic API responses
 - Toggle between mock and live API via one environment variable
 - Avoids API rate limits during iteration
+- Factory pattern so no code changes needed beyond swapping client with .env feature flag
 
 **Why This Matters:**
 Hitting a local server (< 1ms) beats rate-limited external APIs (1-2s+).
 
 **Result:**
-- I iterate 10x faster during feature work
-- Tests don't flake due to network timeouts
-- I can craft edge-case scenarios manually
+- Faster iteration during feature work
+- Tests don't break due to network timeouts
+- Can craft edge-case scenarios manually
 
 ### 4. Automated CI/CD Testing Infrastructure
 
@@ -327,7 +288,7 @@ Hitting a local server (< 1ms) beats rate-limited external APIs (1-2s+).
 - Automated deployment gates before production
 
 **Why This Matters:**
-Testing before deployment catches bugs early. Automation removes manual error and accelerates iteration—I can ship with confidence that code has been validated before reaching production.
+Testing before deployment catches bugs early. Automation removes manual error and accelerates iteration. Can be confident that code has been validated before reaching production.
 
 **Result:**
 - No broken code reaches production
@@ -448,7 +409,7 @@ WebSocket sends all data every 1.5 seconds regardless of changes.
 **Future Approach:**
 - Listen for database mutations
 - Send deltas only when data changes
-- Reduces client message throughput by 10x
+- Reduces client message throughput significantly
 
 ### 5. Validation Business Logic
 
@@ -550,15 +511,10 @@ Git Push → Unit Tests → Integration Tests → Docker Build → Deploy
 - Automated rollback on failure
 - Staging environment validation
 
-### Local Deployment
+---
+## Summary: Future architecture
 
-See [Getting Started](#getting-started) for Docker Compose setup.
-
-### Cloud Deployment
-
-The system is currently deployed at **http://167.233.99.14:8000/control-panel**
-
-**Note:** CLI commands are not available on the deployed version due to security constraints.
+![Future Architecture](https://raw.githubusercontent.com/astroposyt/oakland_interview/main/imagesForReadMe/futureArchitecture.png)
 
 ---
 
@@ -577,22 +533,7 @@ The system is currently deployed at **http://167.233.99.14:8000/control-panel**
 
 ---
 
-## Approach & Thinking
-
-This project prioritises **clarity of design thinking** over feature completeness. Every major decision—from the medallion architecture to the mock API—reflects a deliberate trade-off.
-
-**What I'd highlight for review:**
-1. **Data reliability:** Upstream validation prevents corruption of downstream layers
-2. **Operational simplicity:** Medallion architecture keeps developer experience clean while supporting future scaling
-3. **Honest assessment:** I've documented what works well and what needs rework, with clear rationale for each
-4. **Rapid iteration:** Mock API and Docker setup let new contributors start immediately
-
-**If you have questions or spot issues, that's the point—this is a foundation for discussion, not a finished product.**
-
----
-
 ## Getting Help
 
 - **API Documentation:** http://localhost:8000/docs (Swagger UI)
 - **Live Logs:** http://localhost:8080 (Dozzle)
-- **Architecture Questions:** See [Architecture](#architecture) and [Design Decisions](#design-decisions--trade-offs)
