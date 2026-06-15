@@ -17,6 +17,10 @@
 
 https://www.loom.com/share/6b3ff9a411764ff89aa178f0d774cfdb
 
+## Slide video (maybe watch at 2x speed)
+
+https://www.loom.com/share/193cf02a8f2946e58da171223fd556fc
+
 ### Accessing the Deployed Instance
 
 Experience the live system in action:
@@ -562,19 +566,7 @@ Developers iterate faster hitting a local mock server (< 1ms) versus rate-limite
 - Partition by date for efficient querying
 - Archive old data to cheaper storage tiers
 
-#### 3. Resilience & Exponential Backoff
-
-**Current Limitation:**
-- Single attempt to fetch from API
-- No graceful degradation on failures
-- Temporary downtime causes data gaps
-
-**Future Approach:**
-- Implement `tenacity` library for retries
-- Circuit breaker pattern to avoid hammering failing APIs
-- Return cached data on failures
-
-#### 4. Database Migration Management
+#### 3. Database Migration Management
 
 **Current Limitation:**
 - Schema initialised via static `init.sql`
@@ -589,7 +581,7 @@ Developers iterate faster hitting a local mock server (< 1ms) versus rate-limite
 - Audit trail of all changes
 
 
-#### 5. Dead Letter Queue (DLQ) for Failed Validations
+#### 4. Dead Letter Queue (DLQ) for Failed Validations
 
 **Current Limitation:**
 - Invalid payloads logged then discarded
@@ -599,7 +591,7 @@ Developers iterate faster hitting a local mock server (< 1ms) versus rate-limite
 **Future Approach:**
 - Dedicated DLQ table for validation failures
 - Dashboard for reviewing failed records
-- Replay functionality after fixes
+- Add cases to testing suite
 
 **Impact:**
 - No silent data loss
@@ -607,7 +599,7 @@ Developers iterate faster hitting a local mock server (< 1ms) versus rate-limite
 - Compliance audit trail
 
 
-#### 6. Enterprise Observability & Security
+#### 5. Enterprise Observability & Security
 
 **Current Limitation:**
 - Logs to stdout; aggregated locally via Dozzle
@@ -630,7 +622,7 @@ Developers iterate faster hitting a local mock server (< 1ms) versus rate-limite
 
 ---
 
-#### 7. Websocket logic
+#### 6. Websocket logic
 
 **Current Limitation:**
 - Has no logic looking for data mutation etc, simply resends every 1.5 seconds
@@ -640,7 +632,7 @@ Developers iterate faster hitting a local mock server (< 1ms) versus rate-limite
 - Only resend data on data mutation
 
 ---
-#### 8. Business logic
+#### 7. Business logic
 
 **Current Limitation:**
 - Business logic has not been developed properly. There are likely many edge cases
