@@ -521,6 +521,40 @@ Git Push → Unit Tests → Integration Tests → Docker Build → Deploy
 
 ---
 
+## Learning Opportunities & Where I Got Stuck
+ 
+### The Real Challenge: Ambiguity & Trade-offs
+ 
+**The biggest hurdle wasn't technical—it was *uncertainty*.**
+ 
+The brief intentionally leaves many questions unanswered: How much scale do I optimise for? Should this handle thousands of stocks or just a few? How much detail should the API go into? Without clear requirements, every architectural decision became a guess.
+ 
+For example:
+- Should I use an external scheduler (Airflow) now, or keep it simple and refactor later?
+- Should the Bronze layer use object storage, or is PostgreSQL fine for an interview scope?
+- How much validation logic belongs in the anti-corruption layer?
+I resolved this by **optimising for flexibility rather than correctness**. Instead of trying to predict the "right" answer, I built systems that make it *easy to pivot*. The UPSERT strategy, modular architecture, and environment-driven config toggle (mock vs. live API) let me course-correct without major refactoring. This trades some upfront complexity for the ability to handle being wrong.
+ 
+
+ 
+### Where I Got Stuck: Infrastructure & Observability
+ 
+**Multi-container logging took longer than expected.**
+ 
+With PostgreSQL, FastAPI, and Dozzle all running, tracking down issues meant jumping between `docker logs` calls. This was tedious and error-prone. I spent time researching observability tools and discovered **Dozzle**—a zero-configuration log aggregator that runs as a container. It was practically plug-and-play, which massively improved development velocity.
+ 
+
+ 
+### Where I Stumbled: Deployment & Networking
+ 
+**Firewall configuration.**
+ 
+When deploying to the cloud instance, I overlooked that ports needed to be explicitly opened in the firewall. I'm more comfortable with application code than infrastructure, so this was a blind spot. I had to troubleshoot why the service was running locally but unreachable remotely—eventually realizing the firewall was blocking inbound traffic.
+ 
+ ---
+
+
+
 ## Summary: Key Commands
 
 | Task | Command |
